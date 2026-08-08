@@ -219,33 +219,42 @@
     letter-spacing: 0.08em;
     color: var(--muted);
   }
-  .filter-field .brand-select, .filter-field .currency-combo { width: 100%; }
-  .filter-field select.brand-select { flex: none; }
+  .filter-field .brand-select { width: 100%; flex: none; }
 
-  /* Searchable currency combobox: plain <select> options aren't easy to
-     filter through on 166 currencies, so this is a text input + a custom
-     filtered dropdown instead of a native <select>. */
-  .currency-combo {
-    position: relative;
-    flex: 1 1 140px;
+  /* Searchable currency list: this used to be a text input with a floating
+     absolutely-positioned dropdown, but that fought with the on-screen
+     mobile keyboard - the keyboard eats the bottom of the viewport and the
+     dropdown either ended up hidden behind it or the sheet's own scrolling
+     fought with the keyboard's resize. An always-visible, normal-in-flow
+     list beneath a plain search box sidesteps that entirely: there's no
+     floating layer to fight the keyboard for space, it just scrolls as part
+     of the sheet like anything else. */
+  .currency-current {
+    color: var(--gold);
+    font-weight: 700;
   }
-  .currency-input {
+  .currency-search-input {
     width: 100%;
-    cursor: text;
-  }
-  .currency-input:focus { border-color: var(--gold); outline: none; }
-  .currency-dropdown {
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    right: 0;
-    z-index: 60;
-    max-height: 240px;
-    overflow-y: auto;
+    padding: 12px 10px;
+    border: 1px solid var(--border-strong);
     background: var(--surface);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    letter-spacing: 0.02em;
+    outline: none;
+  }
+  .currency-search-input:focus { border-color: var(--gold); }
+  .currency-list {
+    margin-top: 8px;
+    max-height: 200px;
+    overflow-y: auto;
     border: 1px solid var(--border-strong);
   }
   .currency-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     padding: 10px 12px;
     font-family: 'JetBrains Mono', monospace;
     font-size: 0.76rem;
@@ -253,7 +262,8 @@
     letter-spacing: 0.02em;
     cursor: pointer;
   }
-  .currency-option:hover, .currency-option.active {
+  .currency-option:hover { background: rgba(208,168,92,0.15); }
+  .currency-option.selected {
     background: var(--gold);
     color: #171310;
   }
@@ -468,17 +478,15 @@
       <div class="filter-field">
         <label class="filter-label" for="sort-select">Sort</label>
         <select id="sort-select" class="brand-select">
-          <option value="">Default</option>
-          <option value="price-asc">Price: Low to High</option>
           <option value="price-desc">Price: High to Low</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="">Default</option>
         </select>
       </div>
       <div class="filter-field">
-        <label class="filter-label" for="currency-input">Currency</label>
-        <div class="currency-combo" id="currency-combo">
-          <input type="text" id="currency-input" class="brand-select currency-input" placeholder="USD" autocomplete="off" inputmode="text">
-          <div class="currency-dropdown" id="currency-dropdown" style="display:none;"></div>
-        </div>
+        <label class="filter-label" for="currency-search">Currency <span id="currency-current"></span></label>
+        <input type="text" id="currency-search" class="currency-search-input" placeholder="Search currency…" autocomplete="off" inputmode="text">
+        <div class="currency-list" id="currency-list"></div>
       </div>
     </div>
   </div>
@@ -505,6 +513,7 @@
 
   let allItems = [];
   const PAGE_SIZE = 60;
+  const DEFAULT_SORT = 'price-desc';
   let currentFiltered = [];
   let renderedCount = 0;
 
@@ -513,8 +522,9 @@
   const searchEl = document.getElementById('search');
   const brandFilterEl = document.getElementById('brand-filter');
   const sortSelectEl = document.getElementById('sort-select');
-  const currencyInputEl = document.getElementById('currency-input');
-  const currencyDropdownEl = document.getElementById('currency-dropdown');
+  const currencySearchEl = document.getElementById('currency-search');
+  const currencyListEl = document.getElementById('currency-list');
+  const currencyCurrentEl = document.getElementById('currency-current');
   const loadMoreWrap = document.getElementById('load-more-wrap');
   const categorySelectEl = document.getElementById('category-select');
   const itemCountEl = document.getElementById('item-count');
@@ -554,16 +564,18 @@
   });
 
   function updateFiltersBadge() {
-    const active = !!brandFilterEl.value || !!sortSelectEl.value || selectedCurrency !== 'USD';
+    const active = !!brandFilterEl.value || sortSelectEl.value !== DEFAULT_SORT || selectedCurrency !== 'USD';
     filtersBadge.style.display = active ? 'block' : 'none';
   }
 
   filterResetBtn.addEventListener('click', () => {
     brandFilterEl.value = '';
-    sortSelectEl.value = '';
+    sortSelectEl.value = DEFAULT_SORT;
     selectedCurrency = 'USD';
-    currencyInputEl.value = 'USD';
-    applyFilters();
+    localStorage.removeItem(CURRENCY_STORAGE_KEY);
+    currencySearchEl.value = '';
+    renderCurrencyList();
+    applyFilters(); // single re-render/badge-update covering all three resets above
   });
 
   // Full-screen image viewer. On a touchscreen this supports real pinch-zoom
@@ -745,13 +757,16 @@
   // picking this one). Falls back to USD-only if the fetch fails so the page
   // still works with no network access to that API.
   let exchangeRates = { USD: 1 };
-  let selectedCurrency = 'USD';
+  const CURRENCY_STORAGE_KEY = 'source:currency';
+  // Persisted in localStorage (not just a JS variable) because switching
+  // category does a full page navigation, not an in-page re-render - without
+  // this the currency would silently snap back to USD on every category
+  // switch, which is exactly what was reported as broken.
+  let selectedCurrency = localStorage.getItem(CURRENCY_STORAGE_KEY) || 'USD';
   const CURRENCY_SYMBOLS = {
     USD: '$', GBP: '£', EUR: '€', JPY: '¥', CNY: '¥', AUD: 'A$', CAD: 'C$',
     HKD: 'HK$', NZD: 'NZ$', SGD: 'S$', INR: '₹', CHF: 'CHF ',
   };
-
-  currencyInputEl.value = selectedCurrency;
 
   async function fetchExchangeRates() {
     try {
@@ -764,6 +779,7 @@
       console.error('Failed to fetch exchange rates, defaulting to USD only', err);
       exchangeRates = { USD: 1 };
     }
+    renderCurrencyList(); // the persisted currency might not be in the USD-only fallback set yet
   }
 
   function convertFromUsd(usdAmount) {
@@ -775,70 +791,60 @@
     return symbol ? `${symbol}${amount.toFixed(2)}` : `${code} ${amount.toFixed(2)}`;
   }
 
-  // Searchable currency combobox - typing filters the (up to 166-entry)
-  // currency list live, since scrolling a plain <select> to find one code
-  // is slow. Selecting a currency re-renders the grid with converted prices.
+  // Currency list: always rendered in-flow inside the filter sheet (not a
+  // floating/absolutely-positioned dropdown) with a plain search box above
+  // it that filters live as you type. The earlier combobox-with-popup
+  // version fought with the on-screen mobile keyboard - the keyboard eats
+  // the bottom of the viewport, and an absolutely-positioned dropdown either
+  // ended up hidden behind it or clipped by it. Because this list is just
+  // normal scrollable content inside the sheet, there's no floating layer to
+  // conflict with the keyboard in the first place.
   function selectCurrency(code) {
     selectedCurrency = code;
-    currencyInputEl.value = code;
-    hideCurrencyDropdown();
+    localStorage.setItem(CURRENCY_STORAGE_KEY, code);
+    currencySearchEl.value = '';
+    currencySearchEl.blur(); // dismiss the on-screen keyboard now that a choice has been made
+    renderCurrencyList();
     updateFiltersBadge();
     resetAndRender(currentFiltered);
   }
 
-  function showCurrencyDropdown(showAll) {
-    // On focus the input still holds the currently-selected code (e.g.
-    // "USD"), which would otherwise filter the list down to just that one
-    // entry - showAll bypasses that so focusing always opens the full list,
-    // ready to be typed over. Typing itself still filters normally.
-    const query = showAll ? '' : currencyInputEl.value.trim().toUpperCase();
+  function renderCurrencyList() {
+    currencyCurrentEl.textContent = selectedCurrency;
+    const query = currencySearchEl.value.trim().toUpperCase();
     const codes = Object.keys(exchangeRates).sort();
     const matches = query ? codes.filter(code => code.includes(query)) : codes;
 
-    currencyDropdownEl.innerHTML = '';
+    currencyListEl.innerHTML = '';
     if (!matches.length) {
       const empty = document.createElement('div');
       empty.className = 'currency-option-empty';
       empty.textContent = 'No matching currency';
-      currencyDropdownEl.appendChild(empty);
-    } else {
-      matches.forEach((code, i) => {
-        const opt = document.createElement('div');
-        opt.className = 'currency-option' + (i === 0 ? ' active' : '');
-        opt.textContent = code;
-        opt.addEventListener('mousedown', (e) => {
-          e.preventDefault(); // keep focus so blur doesn't close the dropdown before the click registers
-          selectCurrency(code);
-        });
-        currencyDropdownEl.appendChild(opt);
-      });
+      currencyListEl.appendChild(empty);
+      return;
     }
-    currencyDropdownEl.style.display = 'block';
+    matches.forEach(code => {
+      const opt = document.createElement('div');
+      opt.className = 'currency-option' + (code === selectedCurrency ? ' selected' : '');
+      opt.textContent = code;
+      opt.addEventListener('click', () => selectCurrency(code));
+      currencyListEl.appendChild(opt);
+    });
   }
 
-  function hideCurrencyDropdown() {
-    currencyDropdownEl.style.display = 'none';
-  }
-
-  currencyInputEl.addEventListener('focus', () => {
-    currencyInputEl.select();
-    showCurrencyDropdown(true);
-  });
-  currencyInputEl.addEventListener('input', () => showCurrencyDropdown(false));
-  currencyInputEl.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-      currencyInputEl.value = selectedCurrency;
-      hideCurrencyDropdown();
-      currencyInputEl.blur();
-    } else if (e.key === 'Enter') {
+  currencySearchEl.addEventListener('input', renderCurrencyList);
+  currencySearchEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
       e.preventDefault();
-      const firstMatch = currencyDropdownEl.querySelector('.currency-option');
+      const firstMatch = currencyListEl.querySelector('.currency-option');
       if (firstMatch) selectCurrency(firstMatch.textContent);
+    } else if (e.key === 'Escape') {
+      currencySearchEl.value = '';
+      renderCurrencyList();
+      currencySearchEl.blur();
     }
   });
-  document.addEventListener('click', (e) => {
-    if (!e.target.closest('#currency-combo')) hideCurrencyDropdown();
-  });
+  renderCurrencyList();
 
   function populateBrandFilter(items) {
     const counts = new Map();
@@ -987,7 +993,7 @@
       document.title = `Source Prices — ${categoryLabel}`;
       renderCategorySelect(availableSlugs);
       populateBrandFilter(allItems);
-      resetAndRender(allItems);
+      applyFilters(); // not resetAndRender(allItems) directly - this also applies the default High to Low sort
     })
     .catch(err => {
       console.error(`Failed to load ${DATA_URL}`, err);
