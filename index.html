@@ -67,8 +67,8 @@
     flex-wrap: wrap;
   }
   .category-select, .brand-select {
-    flex: 1 1 140px;
-    padding: 12px 10px;
+    flex: 1 1 90px;
+    padding: 12px 8px;
     border: 1px solid var(--border-strong);
     border-radius: 0;
     font-family: 'JetBrains Mono', monospace;
@@ -81,7 +81,8 @@
     cursor: pointer;
   }
   .controls input[type="search"] {
-    flex: 2 1 200px;
+    flex: 2 1 80px;
+    min-width: 0;
     padding: 12px 10px;
     border: 1px solid var(--border-strong);
     border-radius: 0;
@@ -92,6 +93,134 @@
     outline: none;
   }
   .controls input[type="search"]::placeholder { color: var(--muted); }
+
+  /* Filters button in the sticky bar - opens the bottom sheet below instead
+     of cramming Brand/Sort/Currency into the sticky bar itself, which was
+     wrapping to 3-4 rows on a phone and eating most of the screen. */
+  .filters-btn {
+    position: relative;
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px;
+    border: 1px solid var(--border-strong);
+    background: var(--surface);
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.76rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+  }
+  .filters-btn svg { width: 15px; height: 15px; flex: none; }
+  @media (max-width: 420px) {
+    .filters-btn { padding: 12px 10px; }
+    .filters-btn-label { display: none; }
+  }
+  .filters-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--gold);
+  }
+
+  /* Bottom sheet: rounded top corners are the one deliberate break from this
+     page's otherwise all-sharp-corners look, same reasoning as the gift-card
+     modal on the storefront - it's such a strong native iOS/Android
+     convention for this exact UI pattern that keeping it square would read
+     as broken rather than "on brand". */
+  .filter-sheet-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 250;
+    background: rgba(0,0,0,0);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    transition: background 0.25s ease;
+  }
+  .filter-sheet-overlay.open { background: rgba(0,0,0,0.6); }
+  .filter-sheet {
+    width: 100%;
+    max-width: 520px;
+    max-height: 80vh;
+    overflow-y: auto;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-bottom: none;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    transform: translateY(100%);
+    transition: transform 0.28s cubic-bezier(.2,.9,.3,1.1);
+  }
+  .filter-sheet-overlay.open .filter-sheet { transform: translateY(0); }
+  .filter-sheet-handle {
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border-strong);
+    margin: 10px auto 4px;
+  }
+  .filter-sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .filter-sheet-header h2 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin: 0;
+  }
+  .filter-sheet-header-actions { display: flex; align-items: center; gap: 14px; }
+  .filter-reset-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-decoration: underline;
+    cursor: pointer;
+    padding: 0;
+  }
+  .filter-sheet-close {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1.2rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px;
+  }
+  .filter-sheet-body {
+    padding: 16px 18px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .filter-field { display: flex; flex-direction: column; gap: 8px; }
+  .filter-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+  }
+  .filter-field .brand-select, .filter-field .currency-combo { width: 100%; }
+  .filter-field select.brand-select { flex: none; }
 
   /* Searchable currency combobox: plain <select> options aren't easy to
      filter through on 166 currencies, so this is a text input + a custom
@@ -310,19 +439,48 @@
 <div class="controls-bar">
   <div class="controls">
     <select id="category-select" class="category-select"></select>
-    <select id="brand-filter" class="brand-select">
-      <option value="">All brands</option>
-    </select>
-    <select id="sort-select" class="brand-select">
-      <option value="">Sort: Default</option>
-      <option value="price-asc">Price: Low to High</option>
-      <option value="price-desc">Price: High to Low</option>
-    </select>
-    <div class="currency-combo" id="currency-combo">
-      <input type="text" id="currency-input" class="brand-select currency-input" placeholder="USD" autocomplete="off" inputmode="text">
-      <div class="currency-dropdown" id="currency-dropdown" style="display:none;"></div>
-    </div>
     <input type="search" id="search" placeholder="Search…">
+    <button type="button" id="filters-btn" class="filters-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"></line><line x1="4" y1="10" x2="4" y2="3"></line><line x1="12" y1="21" x2="12" y2="12"></line><line x1="12" y1="8" x2="12" y2="3"></line><line x1="20" y1="21" x2="20" y2="16"></line><line x1="20" y1="12" x2="20" y2="3"></line><line x1="1" y1="14" x2="7" y2="14"></line><line x1="9" y1="8" x2="15" y2="8"></line><line x1="17" y1="16" x2="23" y2="16"></line></svg>
+      <span class="filters-btn-label">Filters</span>
+      <span class="filters-badge" id="filters-badge" style="display:none;"></span>
+    </button>
+  </div>
+</div>
+
+<div class="filter-sheet-overlay" id="filter-sheet-overlay" style="display:none;">
+  <div class="filter-sheet">
+    <div class="filter-sheet-handle"></div>
+    <div class="filter-sheet-header">
+      <h2>Filters</h2>
+      <div class="filter-sheet-header-actions">
+        <button type="button" id="filter-reset-btn" class="filter-reset-btn">Reset</button>
+        <button type="button" id="filter-sheet-close" class="filter-sheet-close" aria-label="Close">✕</button>
+      </div>
+    </div>
+    <div class="filter-sheet-body">
+      <div class="filter-field">
+        <label class="filter-label" for="brand-filter">Brand</label>
+        <select id="brand-filter" class="brand-select">
+          <option value="">All brands</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="filter-label" for="sort-select">Sort</label>
+        <select id="sort-select" class="brand-select">
+          <option value="">Default</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+        </select>
+      </div>
+      <div class="filter-field">
+        <label class="filter-label" for="currency-input">Currency</label>
+        <div class="currency-combo" id="currency-combo">
+          <input type="text" id="currency-input" class="brand-select currency-input" placeholder="USD" autocomplete="off" inputmode="text">
+          <div class="currency-dropdown" id="currency-dropdown" style="display:none;"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -364,6 +522,49 @@
   const imageModalViewport = document.getElementById('image-modal-viewport');
   const imageModalImg = document.getElementById('image-modal-img');
   const imageModalClose = document.getElementById('image-modal-close');
+  const filtersBtn = document.getElementById('filters-btn');
+  const filtersBadge = document.getElementById('filters-badge');
+  const filterSheetOverlay = document.getElementById('filter-sheet-overlay');
+  const filterSheetClose = document.getElementById('filter-sheet-close');
+  const filterResetBtn = document.getElementById('filter-reset-btn');
+
+  // Bottom sheet for Brand/Sort/Currency - kept out of the sticky bar itself
+  // since cramming all of it in there wrapped to 3-4 rows on a phone. Same
+  // "set display, then add the class on the next frame" two-step used here
+  // as the only way to get the slide-up transition to actually play (if the
+  // 'open' class were added in the same tick as display:flex, the browser
+  // never gets a chance to paint the pre-transition state first).
+  function openFilterSheet() {
+    filterSheetOverlay.style.display = 'flex';
+    requestAnimationFrame(() => filterSheetOverlay.classList.add('open'));
+  }
+
+  function closeFilterSheet() {
+    filterSheetOverlay.classList.remove('open');
+    setTimeout(() => { filterSheetOverlay.style.display = 'none'; }, 280);
+  }
+
+  filtersBtn.addEventListener('click', openFilterSheet);
+  filterSheetClose.addEventListener('click', closeFilterSheet);
+  filterSheetOverlay.addEventListener('click', (e) => {
+    if (e.target === filterSheetOverlay) closeFilterSheet();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && filterSheetOverlay.style.display !== 'none') closeFilterSheet();
+  });
+
+  function updateFiltersBadge() {
+    const active = !!brandFilterEl.value || !!sortSelectEl.value || selectedCurrency !== 'USD';
+    filtersBadge.style.display = active ? 'block' : 'none';
+  }
+
+  filterResetBtn.addEventListener('click', () => {
+    brandFilterEl.value = '';
+    sortSelectEl.value = '';
+    selectedCurrency = 'USD';
+    currencyInputEl.value = 'USD';
+    applyFilters();
+  });
 
   // Full-screen image viewer. On a touchscreen this supports real pinch-zoom
   // and, once zoomed, single-finger panning - implemented by hand (rather
@@ -581,6 +782,7 @@
     selectedCurrency = code;
     currencyInputEl.value = code;
     hideCurrencyDropdown();
+    updateFiltersBadge();
     resetAndRender(currentFiltered);
   }
 
@@ -758,6 +960,7 @@
     } else if (sort === 'price-desc') {
       filtered.sort((a, b) => (b.price_usd ?? 0) - (a.price_usd ?? 0));
     }
+    updateFiltersBadge();
     resetAndRender(filtered);
   }
 
