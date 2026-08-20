@@ -470,6 +470,12 @@
     </div>
     <div class="filter-sheet-body">
       <div class="filter-field">
+        <label class="filter-label" for="type-filter">Type</label>
+        <select id="type-filter" class="brand-select">
+          <option value="">All types</option>
+        </select>
+      </div>
+      <div class="filter-field">
         <label class="filter-label" for="brand-filter">Brand</label>
         <select id="brand-filter" class="brand-select">
           <option value="">All brands</option>
@@ -523,6 +529,7 @@
   const emptyEl = document.getElementById('empty');
   const searchEl = document.getElementById('search');
   const brandFilterEl = document.getElementById('brand-filter');
+  const typeFilterEl = document.getElementById('type-filter');
   const sortSelectEl = document.getElementById('sort-select');
   const currencySearchEl = document.getElementById('currency-search');
   const currencyListEl = document.getElementById('currency-list');
@@ -566,12 +573,13 @@
   });
 
   function updateFiltersBadge() {
-    const active = !!brandFilterEl.value || sortSelectEl.value !== DEFAULT_SORT || selectedCurrency !== 'USD';
+    const active = !!brandFilterEl.value || !!typeFilterEl.value || sortSelectEl.value !== DEFAULT_SORT || selectedCurrency !== 'USD';
     filtersBadge.style.display = active ? 'block' : 'none';
   }
 
   filterResetBtn.addEventListener('click', () => {
     brandFilterEl.value = '';
+    typeFilterEl.value = '';
     sortSelectEl.value = DEFAULT_SORT;
     selectedCurrency = 'USD';
     localStorage.removeItem(CURRENCY_STORAGE_KEY);
@@ -848,20 +856,38 @@
   });
   renderCurrencyList();
 
-  function populateBrandFilter(items) {
+  // Called more than once per page load (repsstar items first, then again
+  // once findsindex's items are merged in - see mergeFindsindexData()), so
+  // this must clear its own previously-added <option>s each time rather than
+  // appending on top of them, or every brand/type ends up listed twice.
+  function populateSelectCounts(selectEl, items, field) {
+    const previousValue = selectEl.value;
+    while (selectEl.options.length > 1) selectEl.remove(1);
+
     const counts = new Map();
     items.forEach(item => {
-      const b = item.brand;
-      if (!b) return;
-      counts.set(b, (counts.get(b) || 0) + 1);
+      const v = item[field];
+      if (!v) return;
+      counts.set(v, (counts.get(v) || 0) + 1);
     });
     const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1]);
-    for (const [brand, count] of sorted) {
+    for (const [value, count] of sorted) {
       const opt = document.createElement('option');
-      opt.value = brand;
-      opt.textContent = `${brand} (${count})`;
-      brandFilterEl.appendChild(opt);
+      opt.value = value;
+      opt.textContent = `${value} (${count})`;
+      selectEl.appendChild(opt);
     }
+    if ([...selectEl.options].some(o => o.value === previousValue)) {
+      selectEl.value = previousValue;
+    }
+  }
+
+  function populateBrandFilter(items) {
+    populateSelectCounts(brandFilterEl, items, 'brand');
+  }
+
+  function populateTypeFilter(items) {
+    populateSelectCounts(typeFilterEl, items, 'subcategory');
   }
 
   function resetAndRender(items) {
@@ -954,11 +980,13 @@
   function applyFilters() {
     const q = searchEl.value.trim().toLowerCase();
     const brand = brandFilterEl.value;
+    const type = typeFilterEl.value;
     const sort = sortSelectEl.value;
     const filtered = allItems.filter(item => {
       const matchesQuery = !q || (item.product_title || '').toLowerCase().includes(q);
       const matchesBrand = !brand || item.brand === brand;
-      return matchesQuery && matchesBrand;
+      const matchesType = !type || item.subcategory === type;
+      return matchesQuery && matchesBrand && matchesType;
     });
     // Sorting by the raw USD price is equivalent to sorting by the
     // currently-displayed converted currency (conversion is just a positive
@@ -974,6 +1002,7 @@
 
   searchEl.addEventListener('input', applyFilters);
   brandFilterEl.addEventListener('change', applyFilters);
+  typeFilterEl.addEventListener('change', applyFilters);
   sortSelectEl.addEventListener('change', applyFilters);
 
   // Independent of the item-data fetch below (like the other pages' currency
@@ -996,7 +1025,8 @@
     const extra = data.items || [];
     if (!extra.length) return;
     allItems = allItems.concat(extra);
-    populateBrandFilter(allItems); // re-derive: findsindex introduces brands repsstar's data doesn't have
+    populateBrandFilter(allItems); // re-derive: findsindex introduces brands/types repsstar's data doesn't have
+    populateTypeFilter(allItems);
     applyFilters();
   }
 
@@ -1014,6 +1044,7 @@
       document.title = `Source Prices — ${categoryLabel}`;
       renderCategorySelect(availableSlugs);
       populateBrandFilter(allItems);
+      populateTypeFilter(allItems);
       applyFilters(); // not resetAndRender(allItems) directly - this also applies the default High to Low sort
 
       fetch(FINDSINDEX_DATA_URL)
