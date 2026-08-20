@@ -979,6 +979,25 @@
   // items just render in USD until (if) more currencies become available.
   fetchExchangeRates();
 
+  // findsindex.com's catalog (see conversation) - kept in its own findsindex/
+  // subdirectory rather than merged into the repsstar t-shirts.json etc. on
+  // disk, since those files are also read by the admin tool and the public
+  // storefront and this data is repsstar-scale-or-bigger per category (e.g.
+  // 85k t-shirts vs repsstar's ~12k) - merging on disk would have silently
+  // ballooned every page that reads those files, not just this one. Fetched
+  // and merged in client-side, after the repsstar render, so this page's
+  // first paint isn't blocked on a second multi-ten-MB download - the grid
+  // and item count just grow once it's in.
+  const FINDSINDEX_DATA_URL = `findsindex/${category}.json`;
+
+  function mergeFindsindexData(data) {
+    const extra = data.items || [];
+    if (!extra.length) return;
+    allItems = allItems.concat(extra);
+    populateBrandFilter(allItems); // re-derive: findsindex introduces brands repsstar's data doesn't have
+    applyFilters();
+  }
+
   Promise.all([
     fetch(DATA_URL).then(res => {
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
@@ -994,6 +1013,11 @@
       renderCategorySelect(availableSlugs);
       populateBrandFilter(allItems);
       applyFilters(); // not resetAndRender(allItems) directly - this also applies the default High to Low sort
+
+      fetch(FINDSINDEX_DATA_URL)
+        .then(res => res.ok ? res.json() : null)
+        .then(fsiData => { if (fsiData) mergeFindsindexData(fsiData); })
+        .catch(err => console.error(`Failed to load ${FINDSINDEX_DATA_URL}`, err));
     })
     .catch(err => {
       console.error(`Failed to load ${DATA_URL}`, err);
