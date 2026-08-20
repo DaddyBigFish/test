@@ -507,9 +507,11 @@
 
 <script>
   // Which JSON file to load. Override with ?category=hoodies-sweaters etc.
+  // repsstar/ and findsindex/ (below) are separate folders so the two
+  // catalogs never collide or get confused for one another.
   const params = new URLSearchParams(location.search);
   const category = params.get('category') || 't-shirts';
-  const DATA_URL = `${category}.json`;
+  const DATA_URL = `repsstar/${category}.json`;
 
   let allItems = [];
   const PAGE_SIZE = 60;
