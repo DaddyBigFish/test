@@ -773,13 +773,18 @@
     ["sleepwear", "Sleepwear"],
   ];
 
-  function renderCategorySelect(availableSlugs) {
+  // Sorted by item count (most items first), same as the brand filter -
+  // with 60 categories, declaration order isn't a useful browsing order.
+  function renderCategorySelect(availableCounts) {
     categorySelectEl.innerHTML = '';
-    for (const [slug, label] of CATEGORIES) {
-      if (availableSlugs && !availableSlugs.has(slug) && slug !== category) continue;
+    const entries = CATEGORIES
+      .filter(([slug]) => !availableCounts || availableCounts.has(slug) || slug === category)
+      .sort((a, b) => (availableCounts?.get(b[0]) ?? 0) - (availableCounts?.get(a[0]) ?? 0));
+    for (const [slug, label] of entries) {
       const opt = document.createElement('option');
       opt.value = slug;
-      opt.textContent = label;
+      const count = availableCounts?.get(slug);
+      opt.textContent = count ? `${label} (${count})` : label;
       if (slug === category) opt.selected = true;
       categorySelectEl.appendChild(opt);
     }
@@ -794,7 +799,7 @@
       const res = await fetch('categories.json', { cache: 'no-store' });
       if (!res.ok) return null;
       const data = await res.json();
-      return new Set((data.categories || []).map(c => c.slug));
+      return new Map((data.categories || []).map(c => [c.slug, c.count]));
     } catch (err) {
       return null;
     }
@@ -1074,12 +1079,12 @@
     fetch(DATA_URL).then(res => res.ok ? res.json() : { items: [] }),
     fetchCategoryManifest(),
   ])
-    .then(([data, availableSlugs]) => {
+    .then(([data, availableCounts]) => {
       allItems = data.items || [];
       const categoryLabel = (CATEGORIES.find(([slug]) => slug === category) || [null, category])[1];
       document.getElementById('page-title').textContent = categoryLabel;
       document.title = `Source Prices — ${categoryLabel}`;
-      renderCategorySelect(availableSlugs);
+      renderCategorySelect(availableCounts);
       populateBrandFilter(allItems);
       applyFilters(); // not resetAndRender(allItems) directly - this also applies the default High to Low sort
 
