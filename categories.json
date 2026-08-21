@@ -3,77 +3,302 @@
     {
       "slug": "sneaker",
       "label": "Sneakers",
-      "count": 14115
+      "count": 58276
     },
     {
       "slug": "hoodies-sweaters",
       "label": "Hoodies & Sweaters",
-      "count": 9855
+      "count": 39894
     },
     {
       "slug": "t-shirts",
       "label": "T-Shirts",
-      "count": 12014
+      "count": 85502
     },
     {
       "slug": "jackets",
       "label": "Jackets",
-      "count": 2560
+      "count": 6972
     },
     {
       "slug": "pants-shorts",
       "label": "Pants & Shorts",
-      "count": 4382
+      "count": 3240
     },
     {
       "slug": "headwear",
       "label": "Headwear",
-      "count": 1641
+      "count": 1662
     },
     {
       "slug": "bags",
       "label": "Bags",
-      "count": 1613
+      "count": 7873
     },
     {
       "slug": "accessories",
       "label": "Accessories",
-      "count": 2353
+      "count": 4798
     },
     {
       "slug": "perfume",
       "label": "Perfume",
-      "count": 253
+      "count": 1226
     },
     {
       "slug": "electronics",
       "label": "Electronics",
-      "count": 380
+      "count": 5980
     },
     {
       "slug": "jersey",
       "label": "Jerseys",
-      "count": 1531
+      "count": 20238
     },
     {
       "slug": "other-stuff",
       "label": "Other Stuff",
-      "count": 345
+      "count": 1466
     },
     {
       "slug": "sunglasses",
       "label": "Sunglasses",
-      "count": 1172
+      "count": 6833
     },
     {
       "slug": "underwear",
       "label": "Underwear",
-      "count": 243
+      "count": 1644
     },
     {
       "slug": "socks",
       "label": "Socks",
-      "count": 418
+      "count": 5050
+    },
+    {
+      "slug": "boots",
+      "label": "Boots",
+      "count": 1925
+    },
+    {
+      "slug": "heels-sandals",
+      "label": "Heels & Sandals",
+      "count": 7597
+    },
+    {
+      "slug": "loafers-formal",
+      "label": "Loafers & Formal Shoes",
+      "count": 1523
+    },
+    {
+      "slug": "slippers",
+      "label": "Slippers",
+      "count": 1995
+    },
+    {
+      "slug": "tracksuits",
+      "label": "Tracksuits",
+      "count": 3467
+    },
+    {
+      "slug": "sweaters-cardigans",
+      "label": "Sweaters & Cardigans",
+      "count": 8619
+    },
+    {
+      "slug": "polos",
+      "label": "Polo Shirts",
+      "count": 7390
+    },
+    {
+      "slug": "tank-tops",
+      "label": "Tank Tops",
+      "count": 1434
+    },
+    {
+      "slug": "long-sleeve",
+      "label": "Long Sleeve Tops",
+      "count": 2262
+    },
+    {
+      "slug": "button-up-shirts",
+      "label": "Button-Up Shirts",
+      "count": 441
+    },
+    {
+      "slug": "puffer-down",
+      "label": "Puffer & Down Jackets",
+      "count": 4618
+    },
+    {
+      "slug": "coats",
+      "label": "Coats",
+      "count": 403
+    },
+    {
+      "slug": "denim-jackets",
+      "label": "Denim Jackets",
+      "count": 581
+    },
+    {
+      "slug": "vests",
+      "label": "Vests",
+      "count": 1710
+    },
+    {
+      "slug": "windbreakers",
+      "label": "Windbreakers",
+      "count": 4243
+    },
+    {
+      "slug": "jeans",
+      "label": "Jeans",
+      "count": 6747
+    },
+    {
+      "slug": "cargo-pants",
+      "label": "Cargo Trousers",
+      "count": 1182
+    },
+    {
+      "slug": "sweatpants-joggers",
+      "label": "Joggers & Sweatpants",
+      "count": 5014
+    },
+    {
+      "slug": "shorts",
+      "label": "Shorts",
+      "count": 14404
+    },
+    {
+      "slug": "leggings",
+      "label": "Leggings",
+      "count": 374
+    },
+    {
+      "slug": "skirts",
+      "label": "Skirts",
+      "count": 271
+    },
+    {
+      "slug": "beanies",
+      "label": "Beanies",
+      "count": 2179
+    },
+    {
+      "slug": "bucket-hats",
+      "label": "Bucket Hats",
+      "count": 687
+    },
+    {
+      "slug": "caps",
+      "label": "Caps",
+      "count": 7227
+    },
+    {
+      "slug": "backpacks",
+      "label": "Backpacks",
+      "count": 3813
+    },
+    {
+      "slug": "crossbody-belt-bags",
+      "label": "Crossbody & Belt Bags",
+      "count": 7468
+    },
+    {
+      "slug": "totes-shoulder-bags",
+      "label": "Totes & Shoulder Bags",
+      "count": 6882
+    },
+    {
+      "slug": "duffle-travel",
+      "label": "Duffle & Travel Bags",
+      "count": 886
+    },
+    {
+      "slug": "clutches",
+      "label": "Clutches",
+      "count": 758
+    },
+    {
+      "slug": "jewelry",
+      "label": "Jewelry",
+      "count": 8980
+    },
+    {
+      "slug": "watches",
+      "label": "Watches",
+      "count": 3129
+    },
+    {
+      "slug": "belts",
+      "label": "Belts",
+      "count": 7553
+    },
+    {
+      "slug": "wallets-card-holders",
+      "label": "Wallets & Card Holders",
+      "count": 2842
+    },
+    {
+      "slug": "scarves-gloves",
+      "label": "Scarves & Gloves",
+      "count": 1221
+    },
+    {
+      "slug": "earbuds-headphones",
+      "label": "Earbuds & Headphones",
+      "count": 581
+    },
+    {
+      "slug": "speakers",
+      "label": "Speakers",
+      "count": 127
+    },
+    {
+      "slug": "smartwatches",
+      "label": "Smartwatches",
+      "count": 328
+    },
+    {
+      "slug": "chargers-cables",
+      "label": "Chargers & Cables",
+      "count": 23
+    },
+    {
+      "slug": "phone-accessories",
+      "label": "Phone Accessories",
+      "count": 1008
+    },
+    {
+      "slug": "dresses-sets",
+      "label": "Dresses & Sets",
+      "count": 14585
+    },
+    {
+      "slug": "suits",
+      "label": "Suits",
+      "count": 51
+    },
+    {
+      "slug": "activewear",
+      "label": "Activewear",
+      "count": 1562
+    },
+    {
+      "slug": "optical-glasses",
+      "label": "Optical Glasses",
+      "count": 505
+    },
+    {
+      "slug": "swimwear",
+      "label": "Swimwear",
+      "count": 1707
+    },
+    {
+      "slug": "sleepwear",
+      "label": "Sleepwear",
+      "count": 495
     }
   ]
 }

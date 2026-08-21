@@ -470,12 +470,6 @@
     </div>
     <div class="filter-sheet-body">
       <div class="filter-field">
-        <label class="filter-label" for="type-filter">Type</label>
-        <select id="type-filter" class="brand-select">
-          <option value="">All types</option>
-        </select>
-      </div>
-      <div class="filter-field">
         <label class="filter-label" for="brand-filter">Brand</label>
         <select id="brand-filter" class="brand-select">
           <option value="">All brands</option>
@@ -529,7 +523,6 @@
   const emptyEl = document.getElementById('empty');
   const searchEl = document.getElementById('search');
   const brandFilterEl = document.getElementById('brand-filter');
-  const typeFilterEl = document.getElementById('type-filter');
   const sortSelectEl = document.getElementById('sort-select');
   const currencySearchEl = document.getElementById('currency-search');
   const currencyListEl = document.getElementById('currency-list');
@@ -573,13 +566,12 @@
   });
 
   function updateFiltersBadge() {
-    const active = !!brandFilterEl.value || !!typeFilterEl.value || sortSelectEl.value !== DEFAULT_SORT || selectedCurrency !== 'USD';
+    const active = !!brandFilterEl.value || sortSelectEl.value !== DEFAULT_SORT || selectedCurrency !== 'USD';
     filtersBadge.style.display = active ? 'block' : 'none';
   }
 
   filterResetBtn.addEventListener('click', () => {
     brandFilterEl.value = '';
-    typeFilterEl.value = '';
     sortSelectEl.value = DEFAULT_SORT;
     selectedCurrency = 'USD';
     localStorage.removeItem(CURRENCY_STORAGE_KEY);
@@ -730,6 +722,55 @@
     ["sunglasses", "Sunglasses"],
     ["underwear", "Underwear"],
     ["socks", "Socks"],
+    // Promoted from a same-page "Type" guess to their own category (see
+    // PROMOTED_CATEGORIES in scrape_category.py) - a catch-all like "Other"
+    // or "Trainers" was hiding what was actually inside it (dresses were
+    // tagged but had nowhere of their own to show up).
+    ["boots", "Boots"],
+    ["heels-sandals", "Heels & Sandals"],
+    ["loafers-formal", "Loafers & Formal Shoes"],
+    ["slippers", "Slippers"],
+    ["tracksuits", "Tracksuits"],
+    ["sweaters-cardigans", "Jumpers & Cardigans"],
+    ["polos", "Polo Shirts"],
+    ["tank-tops", "Vest Tops"],
+    ["long-sleeve", "Long Sleeve Tops"],
+    ["button-up-shirts", "Shirts"],
+    ["puffer-down", "Puffer & Down Jackets"],
+    ["coats", "Coats"],
+    ["denim-jackets", "Denim Jackets"],
+    ["vests", "Gilets"],
+    ["windbreakers", "Windbreakers"],
+    ["jeans", "Jeans"],
+    ["cargo-pants", "Cargo Trousers"],
+    ["sweatpants-joggers", "Joggers & Sweatpants"],
+    ["shorts", "Shorts"],
+    ["leggings", "Leggings"],
+    ["skirts", "Skirts"],
+    ["beanies", "Beanies"],
+    ["bucket-hats", "Bucket Hats"],
+    ["caps", "Caps"],
+    ["backpacks", "Backpacks"],
+    ["crossbody-belt-bags", "Crossbody & Belt Bags"],
+    ["totes-shoulder-bags", "Totes & Shoulder Bags"],
+    ["duffle-travel", "Duffle & Travel Bags"],
+    ["clutches", "Clutches"],
+    ["jewelry", "Jewellery"],
+    ["watches", "Watches"],
+    ["belts", "Belts"],
+    ["wallets-card-holders", "Wallets & Card Holders"],
+    ["scarves-gloves", "Scarves & Gloves"],
+    ["earbuds-headphones", "Earbuds & Headphones"],
+    ["speakers", "Speakers"],
+    ["smartwatches", "Smartwatches"],
+    ["chargers-cables", "Chargers & Cables"],
+    ["phone-accessories", "Phone Accessories"],
+    ["dresses-sets", "Dresses & Sets"],
+    ["suits", "Suits"],
+    ["activewear", "Activewear"],
+    ["optical-glasses", "Optical Glasses"],
+    ["swimwear", "Swimwear"],
+    ["sleepwear", "Sleepwear"],
   ];
 
   function renderCategorySelect(availableSlugs) {
@@ -886,10 +927,6 @@
     populateSelectCounts(brandFilterEl, items, 'brand');
   }
 
-  function populateTypeFilter(items) {
-    populateSelectCounts(typeFilterEl, items, 'subcategory');
-  }
-
   function resetAndRender(items) {
     grid.innerHTML = '';
     currentFiltered = items;
@@ -980,13 +1017,11 @@
   function applyFilters() {
     const q = searchEl.value.trim().toLowerCase();
     const brand = brandFilterEl.value;
-    const type = typeFilterEl.value;
     const sort = sortSelectEl.value;
     const filtered = allItems.filter(item => {
       const matchesQuery = !q || (item.product_title || '').toLowerCase().includes(q);
       const matchesBrand = !brand || item.brand === brand;
-      const matchesType = !type || item.subcategory === type;
-      return matchesQuery && matchesBrand && matchesType;
+      return matchesQuery && matchesBrand;
     });
     // Sorting by the raw USD price is equivalent to sorting by the
     // currently-displayed converted currency (conversion is just a positive
@@ -1002,7 +1037,6 @@
 
   searchEl.addEventListener('input', applyFilters);
   brandFilterEl.addEventListener('change', applyFilters);
-  typeFilterEl.addEventListener('change', applyFilters);
   sortSelectEl.addEventListener('change', applyFilters);
 
   // Independent of the item-data fetch below (like the other pages' currency
@@ -1025,16 +1059,19 @@
     const extra = data.items || [];
     if (!extra.length) return;
     allItems = allItems.concat(extra);
-    populateBrandFilter(allItems); // re-derive: findsindex introduces brands/types repsstar's data doesn't have
-    populateTypeFilter(allItems);
+    populateBrandFilter(allItems); // re-derive: findsindex introduces brands repsstar's data doesn't have
     applyFilters();
   }
 
+  // Some categories (mostly the ones promoted from a subcategory guess - see
+  // PROMOTED_CATEGORIES in scrape_category.py) are findsindex-only, e.g.
+  // dresses-sets has zero repsstar items - repsstar/dresses-sets.json simply
+  // doesn't exist on disk for those. A 404 there just means "nothing from
+  // this source", not a real failure, so it resolves to an empty item list
+  // instead of rejecting - otherwise the whole page would show a load error
+  // for any findsindex-only category before ever trying the findsindex fetch.
   Promise.all([
-    fetch(DATA_URL).then(res => {
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-      return res.json();
-    }),
+    fetch(DATA_URL).then(res => res.ok ? res.json() : { items: [] }),
     fetchCategoryManifest(),
   ])
     .then(([data, availableSlugs]) => {
@@ -1044,7 +1081,6 @@
       document.title = `Source Prices — ${categoryLabel}`;
       renderCategorySelect(availableSlugs);
       populateBrandFilter(allItems);
-      populateTypeFilter(allItems);
       applyFilters(); // not resetAndRender(allItems) directly - this also applies the default High to Low sort
 
       fetch(FINDSINDEX_DATA_URL)
